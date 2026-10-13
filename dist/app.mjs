@@ -1,5 +1,5 @@
 import {create, advance, metrics, weights, summary} from './engine.mjs';
-import {scenarioCatalog, randomScenario, makeScenario} from './scenarios.mjs';
+import {scenarioCatalog, randomScenario, makeScenario, revealedStock} from './scenarios.mjs';
 import {technicalIndicators} from './indicators.mjs';
 import {createHoldInspector} from './inspection.mjs';
 import {chartWindow, MAX_VISIBLE_BARS} from './chart-window.mjs';
@@ -19,11 +19,16 @@ const holdInspectors=[];
 function tell(text, error=false) { $('notice').textContent=text; $('notice').classList.toggle('error',error); }
 function startGame() {
   ticket=randomScenario(source,ticket);data=makeScenario(source,ticket);state=create(data);
-  pending=null;hover=null;visibleCount=MAX_VISIBLE_BARS;setInput(0);
+  pending=null;hover=null;visibleCount=MAX_VISIBLE_BARS;setInput(.5);
 }
 function inputWeight() { return Number($('target-weight').value)/100; }
 function targetDescription(value) { return value===0?'全部平仓':`${value>0?'做多':'做空'} ${Math.abs(value*100).toFixed(0)}%`; }
-function setInput(value) { $('target-weight').value=value*100; }
+function updateOrderControls() {
+  const value=inputWeight();$('weight-value').textContent=`${Math.round(value*100)}%`;
+  $('target-weight').setAttribute('aria-valuetext',`${Math.round(value*100)}% 仓位`);
+  for(const [id,direction] of [['order-long',1],['order-short',-1]])$(id).setAttribute('aria-pressed',String(value>0&&pending!==null&&pending.ASSET===direction*value));
+}
+function setInput(value) { $('target-weight').value=Math.abs(value)*100;updateOrderControls(); }
 
 function setupCanvas(id) {
   const canvas=$(id), rect=canvas.getBoundingClientRect(), ratio=window.devicePixelRatio||1;
@@ -143,9 +148,13 @@ function render() {
   const held=state.positions.ASSET;
   $('holding').textContent=held?`${held>0?'多头':'空头'} ${Math.abs(held)} 股`:'空仓';$('holding').className=held<0?'negative':held>0?'positive':'';
   $('position-weight').textContent=m.equity>0?`当前仓位 ${pct(m.net/m.equity*100)}`:'当前仓位 —';
-  $('pending-text').textContent=end?'本局已结束 · 可随机开始新一局':pending?`已提交：${targetDescription(pending.ASSET)} · 下一开盘执行`:'点仓位按钮下单；直接推进则保持持仓';
-  $('cancel').hidden=!pending;for(const id of ['next','finish','submit','cancel','target-weight'])$(id).disabled=end;
-  document.querySelectorAll('[data-preset]').forEach(button=>{button.disabled=end;const target=button.dataset.preset==='flat'?0:Number(button.dataset.preset.replace('long','').replace('short',''))/100*(button.dataset.preset.startsWith('short')?-1:1);button.setAttribute('aria-pressed',String(pending!==null&&pending.ASSET===target));});
+  $('pending-text').textContent=end?'本局已结束 · 可随机开始新一局':pending?`已提交：${targetDescription(pending.ASSET)} · 下一开盘执行`:'滑动选仓位，点做多／做空提交';
+  $('cancel').hidden=!pending;for(const id of ['next','finish','order-long','order-short','order-flat','cancel','target-weight'])$(id).disabled=end;
+  updateOrderControls();
+  const identity=revealedStock(source,ticket,state);
+  $('revealed-stock').hidden=!identity;
+  $('revealed-stock').textContent=identity?`${identity.symbol} · ${identity.name}`:'';
+  $('result-title').textContent=identity?`${identity.symbol} · ${identity.name}`:'本次盲测已结束';
   $('trade-count').textContent=`${state.fills.length} 笔成交`;
   $('trades').innerHTML=state.fills.length?state.fills.toReversed().map(f=>`<tr><td>第 ${f.day} 天</td><td>匿名股票</td><td class="${f.delta>0?'positive':'negative'}">${f.delta>0?'买入 / 回补':'卖出 / 做空'} · ${f.reason}</td><td>${Math.abs(f.delta)}</td><td>${money(f.price)}</td><td>${money(f.fee)}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">尚无成交。设置目标仓位，提交后推进一天。</td></tr>';
   $('result').hidden=!end;$('result-text').textContent=`${state.bankrupt?'账户已触发负资产终止。':''}期末净资产 ${money(m.equity)}，收益 ${pct(result.returnPct)}，最大回撤 ${result.maxDrawdownPct.toFixed(2)}%。净分红 ${money(state.dividends)}。${state.marginCall?'期末存在保证金缺口，尚未执行后续开盘平仓。':''}`;
@@ -160,6 +169,7 @@ function step(finish=false) {
     const queued=pending!==null;state=advance(data,state,pending);pending=null;
     if(finish)while(state.day<data.sessions&&!state.bankrupt)state=advance(data,state);
     render();
+    if(state.day>=data.sessions||state.bankrupt)$('result').scrollIntoView({behavior:'smooth',block:'start'});
     tell(state.day===60?'60 个交易日已完成，结果已生成。':state.bankrupt?'本局因负资产终止。':state.marginCall?'收盘已触发实验保证金条件，将在下一开盘优先平仓。':queued?'目标仓位已在新交易日开盘执行。':'已推进一日，保留原有股数。');
   } catch(error) { tell(error.message,true); }
 }
@@ -171,11 +181,13 @@ async function init() {
     const count=scenarioCatalog(source).length;
     $('data-info').textContent=`当前样本包含 ${source.tradable.length} 只美股、${count} 个可抽取的股票与起点组合。每局随机选择一个组合，保证至少 60 根前置日线及随后 60 个完整交易日；新开局不会重复上一局的完全相同组合。`;
     tell('随机场景已就绪。先观察量价与指标，再设置你的第一笔仓位。');
-    $('submit').onclick=()=>{try{pending=weights(data,{ASSET:inputWeight()});render();tell('订单已提交，可在推进前撤销或重新提交。');}catch(error){tell(error.message,true);}};
+    const submitOrder=value=>{try{pending=weights(data,{ASSET:value});render();tell('订单已提交，可在推进前撤销或重新提交。');}catch(error){tell(error.message,true);}};
+    $('target-weight').oninput=updateOrderControls;
+    $('order-long').onclick=()=>submitOrder(inputWeight());
+    $('order-short').onclick=()=>submitOrder(-inputWeight());
+    $('order-flat').onclick=()=>submitOrder(0);
     $('cancel').onclick=()=>{pending=null;render();tell('待执行订单已撤销。');};
     $('next').onclick=()=>step();$('finish').onclick=()=>step(true);
-    const presets={long25:.25,long50:.5,long100:1,short25:-.25,short50:-.5,short100:-1,flat:0};
-    document.querySelectorAll('[data-preset]').forEach(button=>button.onclick=()=>{setInput(presets[button.dataset.preset]);$('submit').click();});
     $('reset').onclick=()=>{
       if(!resetArmed){resetArmed=true;$('reset').textContent='确认随机新开局';tell('再次点击确认，将随机抽取股票和起点并重置资金。');return;}
       startGame();resetArmed=false;$('reset').textContent='↻ 随机新开一局';render();tell('新的匿名场景已抽取，资金已重置。');

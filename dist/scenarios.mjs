@@ -32,3 +32,10 @@ export function makeScenario(source, ticket) {
     tradable: [ANONYMOUS], benchmark: ANONYMOUS,
     stocks: {[ANONYMOUS]: {name: '匿名股票', bars: source.stocks[symbol].bars.slice(0, start + GAME_DAYS + 1)}}};
 }
+
+export function revealedStock(source, ticket, state) {
+  if (!state || (state.day < GAME_DAYS && !state.bankrupt)) return null;
+  const entry = scenarioCatalog(source)[ticket];
+  if (!Number.isInteger(ticket) || !entry) throw new Error('随机场景编号无效');
+  return {symbol: entry.symbol, name: source.stocks[entry.symbol].name || entry.symbol};
+}

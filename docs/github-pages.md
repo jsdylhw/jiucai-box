@@ -8,7 +8,7 @@
 本地代码 → git push main → Actions 测试 → 上传 dist/ → GitHub Pages → 浏览器
 ```
 
-浏览器请求 HTML、CSS、JavaScript 与约 1.17 MB 的行情 JSON，之后随机场景、指标、交易及收益计算都在浏览器中执行。刷新页面不保留当前游戏进度。
+浏览器请求 HTML、CSS、JavaScript 与约 2.30 MB 的行情 JSON，之后随机场景、指标、交易及收益计算都在浏览器中执行。刷新页面不保留当前游戏进度。
 
 ## 首次设置
 

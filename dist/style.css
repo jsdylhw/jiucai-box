@@ -79,3 +79,32 @@ canvas:focus-visible{outline:1px solid var(--gold);outline-offset:2px}
 @media(max-width:760px){main{padding-top:14px}.intro{margin-bottom:14px}.session strong{font-size:25px;margin:4px 0}.session .session-note{display:none}#notice{padding:8px 10px;margin-bottom:12px;font-size:11px}.account-strip .stats article{padding:0 10px}.account-strip .stats strong{font-size:clamp(12px,3.6vw,15px)}.account-strip .stats label{font-size:10px}.account-details{padding:0 10px}.account-details summary{min-height:32px}.account-details>div{flex-direction:column;gap:4px}.start-legend{font-size:10px}#selected-day{font-size:11px}}
 
 .chart-zoom{display:flex;align-items:center;justify-content:flex-end;gap:4px;margin:4px 0 0}.chart-zoom>span{color:var(--muted);font-size:10px;margin-right:5px;font-variant-numeric:tabular-nums}.chart-zoom button{min-width:44px;min-height:36px;padding:4px 9px;font-size:16px;touch-action:manipulation}.chart-zoom #zoom-reset{font-size:11px}@media(max-width:760px){.chart-zoom button{min-height:44px}.chart-zoom{margin-top:2px}}
+
+/* Small account and slider controls, immediately below the indicators. */
+.market>.account-strip{margin:8px 0 4px;background:#141b24;border-radius:6px}
+.market .account-strip .stats{padding:7px 0}
+.market .account-strip .stats article{padding:0 9px}
+.market .account-strip .stats label{font-size:9px}
+.market .account-strip .stats strong{font-size:13px;margin-top:3px;letter-spacing:-.3px}
+.market .account-details{padding:0 9px}
+.market .account-details summary{min-height:27px;font-size:9px}
+.market .account-details summary>span{font-size:9px}
+.market .trade-panel{margin-top:0;padding-top:8px;border-top:0}
+.market .trade-summary{margin-bottom:5px;font-size:10px}
+.market .trade-summary>span{font-size:9px}
+.position-controls{display:grid;grid-template-columns:minmax(0,1fr) 56px 56px;gap:6px;align-items:center}
+.position-slider{min-width:0}.position-slider label{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);gap:5px}
+.position-slider output{color:var(--gold);font-variant-numeric:tabular-nums}
+.position-slider input{display:block;width:100%;height:30px;margin:0;accent-color:var(--gold);cursor:pointer;touch-action:pan-y}
+.market .trade-panel button{min-height:36px;padding:7px 9px;font-size:12px}
+.position-controls .buy{background:#1a302c;color:var(--green);border-color:#31574c}
+.position-controls .sell{background:#342428;color:var(--red);border-color:#604046}
+.market .trade-advance{grid-template-columns:1fr 2fr;margin-top:5px;gap:6px}
+.market .trade-panel .pending{min-height:27px;font-size:9px;padding:2px 0}
+.market .trade-panel .pending .quiet{min-height:30px}
+.market .trade-options{align-items:center;gap:6px}
+.order-note{font-size:9px;color:var(--muted)}
+.market .trade-options>#finish{min-height:30px;font-size:10px;padding:4px 0}
+.revealed-stock{font-size:13px;font-weight:600;color:var(--gold);padding:4px 0 10px;overflow-wrap:anywhere}
+.result h2{overflow-wrap:anywhere}
+@media(max-width:360px){.market .account-strip .stats article{padding:0 6px}.market .account-strip .stats strong{font-size:11px}.position-controls{grid-template-columns:minmax(0,1fr) 50px 50px;gap:5px}}

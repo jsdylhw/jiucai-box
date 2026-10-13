@@ -13,7 +13,10 @@ ROOT = Path(__file__).resolve().parents[1]
 SYMBOLS = ['AAPL', 'MSFT', 'AMZN', 'TSLA', 'GOOGL', 'META', 'NVDA', 'AMD',
            'INTC', 'QCOM', 'AVGO', 'ORCL', 'CRM', 'ADBE', 'JPM', 'BAC', 'GS',
            'V', 'MA', 'XOM', 'CVX', 'JNJ', 'PFE', 'UNH', 'LLY', 'KO', 'PEP',
-           'WMT', 'COST', 'DIS', 'SPY']
+           'WMT', 'COST', 'DIS', 'BRK-B', 'BABA', 'IBM', 'CSCO', 'TXN', 'AMAT',
+           'MU', 'INTU', 'PLTR', 'ABBV', 'MRK', 'ABT', 'TMO', 'DHR', 'PG',
+           'MCD', 'NKE', 'SBUX', 'HD', 'LOW', 'TGT', 'UPS', 'FDX', 'CAT',
+           'DE', 'BA', 'GE', 'GILD', 'COP', 'NEE', 'SPY']
 START, END = '2025-01-01', '2026-01-01'
 
 

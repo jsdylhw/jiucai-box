@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {scenarioCatalog, randomScenario, makeScenario, ANONYMOUS} from '../dist/scenarios.mjs';
+import {scenarioCatalog, randomScenario, makeScenario, revealedStock, ANONYMOUS} from '../dist/scenarios.mjs';
 import {sma, ema, technicalIndicators} from '../dist/indicators.mjs';
 import {create, advance, save, restore} from '../dist/engine.mjs';
 
@@ -81,4 +81,20 @@ test('blind UI source does not include stock names, date selectors or named pres
   const app=fs.readFileSync(new URL('../dist/app.mjs',import.meta.url),'utf8');
   assert.doesNotMatch(html+app,/AAPL|MSFT|AMZN|TSLA|Apple|Microsoft|Amazon|Tesla/);
   assert.doesNotMatch(html,/id="symbol"|data-preset="pair"/);
+});
+
+test('stock identity is revealed only after the game ends and resets for a new game',()=>{
+  const ticket=8,data=makeScenario(source,ticket);
+  let state=create(data);
+  for(let day=0;day<60;day++){
+    assert.equal(revealedStock(source,ticket,state),null);
+    state=advance(data,state);
+  }
+  assert.deepEqual(revealedStock(source,ticket,state),{symbol:'SECRET_B',name:'Other hidden company'});
+  assert.equal(revealedStock(source,0,create(makeScenario(source,0))),null);
+});
+
+test('bankruptcy ending also reveals the correct stock',()=>{
+  assert.deepEqual(revealedStock(source,0,{day:3,bankrupt:true}),{symbol:'SECRET_A',name:'Hidden company'});
+  assert.throws(()=>revealedStock(source,999,{day:60}));
 });
