@@ -8,7 +8,7 @@ dist = ROOT / 'dist'
 html = (dist / 'index.html').read_text(encoding='utf-8')
 css = (dist / 'style.css').read_text(encoding='utf-8')
 modules = '\n'.join((dist / name).read_text(encoding='utf-8').replace('export ', '')
-                    for name in ['engine.mjs', 'scenarios.mjs', 'indicators.mjs', 'inspection.mjs'])
+                    for name in ['engine.mjs', 'scenarios.mjs', 'indicators.mjs', 'inspection.mjs', 'chart-window.mjs'])
 app = (dist / 'app.mjs').read_text(encoding='utf-8')
 app = re.sub(r'^import .*\n', '', app, flags=re.MULTILINE)
 payload = (dist / 'data' / 'us-2025.json').read_text(encoding='utf-8')

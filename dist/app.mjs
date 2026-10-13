@@ -2,6 +2,7 @@ import {create, advance, metrics, weights, summary} from './engine.mjs';
 import {scenarioCatalog, randomScenario, makeScenario} from './scenarios.mjs';
 import {technicalIndicators} from './indicators.mjs';
 import {createHoldInspector} from './inspection.mjs';
+import {chartWindow, MAX_VISIBLE_BARS} from './chart-window.mjs';
 
 const $ = id => document.getElementById(id);
 const money = n => n.toLocaleString('en-US', {style:'currency', currency:'USD', maximumFractionDigits:2});
@@ -12,12 +13,13 @@ const relativeDay = n => n < 0 ? `前 ${-n} 日` : n === 0 ? '起点' : `第 ${n
 const colors = {up:'#6ed5b3', down:'#f08f91', gold:'#dbc69a', blue:'#7baeee', purple:'#b898e2'};
 let source, data, state, ticket, pending=null, chartBars=[], visibleStart=0, indicators, hover=null, resetArmed=false;
 let pinned=false;
+let visibleCount=MAX_VISIBLE_BARS;
 const holdInspectors=[];
 
 function tell(text, error=false) { $('notice').textContent=text; $('notice').classList.toggle('error',error); }
 function startGame() {
   ticket=randomScenario(source,ticket);data=makeScenario(source,ticket);state=create(data);
-  pending=null;hover=null;setInput(0);
+  pending=null;hover=null;visibleCount=MAX_VISIBLE_BARS;setInput(0);
 }
 function inputWeight() { return Number($('target-weight').value)/100; }
 function targetDescription(value) { return value===0?'全部平仓':`${value>0?'做多':'做空'} ${Math.abs(value*100).toFixed(0)}%`; }
@@ -106,6 +108,21 @@ function indicatorReadouts() {
   $('chart-detail').textContent=hover===null?'长按选中 · 左右滑动查看 · 点“最新”返回':`${relativeDay(index-data.startIndex)} · 量 ${current.volume.toLocaleString('en-US')} 股 · 振幅 ${previous?((current.high-current.low)/previous.close*100).toFixed(2)+'%':'—'}${pinned?' · 已选中':''}`;
 }
 function drawMarket() { if(!indicators)return;drawCandles();drawVolume();drawMacd();indicatorReadouts(); }
+function updateChartWindow() {
+  const view=chartWindow(data.startIndex+state.day,visibleCount);
+  visibleStart=view.start;chartBars=data.stocks.ASSET.bars.slice(view.start,view.end);
+  $('zoom-level').textContent=`${view.count} 根`;
+  $('zoom-in').disabled=view.count<=view.minimum;
+  $('zoom-out').disabled=view.count>=view.maximum;
+  $('zoom-reset').disabled=view.count>=view.maximum;
+  $('visible-range').textContent=`当前显示 ${view.count} 根日线 · 无未来数据`;
+  document.querySelector('.start-legend').textContent=data.startIndex<visibleStart?'开局在左侧 · 缩小可见':'金色虚线：开局第 0 天';
+}
+function zoomChart(count) {
+  visibleCount=chartWindow(data.startIndex+state.day,count).count;
+  hover=null;pinned=false;holdInspectors.forEach(controller=>controller.cancel());
+  updateChartWindow();drawMarket();
+}
 function drawEquity() {
   const {ctx,w,h}=setupCanvas('equity-chart'), points=state.history,initial=state.config.initial;
   const values=points.map(p=>p.equity),min=Math.min(initial,...values),max=Math.max(initial,...values),pad=Math.max((max-min)*.15,initial*.002);
@@ -133,9 +150,9 @@ function render() {
   $('trades').innerHTML=state.fills.length?state.fills.toReversed().map(f=>`<tr><td>第 ${f.day} 天</td><td>匿名股票</td><td class="${f.delta>0?'positive':'negative'}">${f.delta>0?'买入 / 回补':'卖出 / 做空'} · ${f.reason}</td><td>${Math.abs(f.delta)}</td><td>${money(f.price)}</td><td>${money(f.fee)}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">尚无成交。设置目标仓位，提交后推进一天。</td></tr>';
   $('result').hidden=!end;$('result-text').textContent=`${state.bankrupt?'账户已触发负资产终止。':''}期末净资产 ${money(m.equity)}，收益 ${pct(result.returnPct)}，最大回撤 ${result.maxDrawdownPct.toFixed(2)}%。净分红 ${money(state.dividends)}。${state.marginCall?'期末存在保证金缺口，尚未执行后续开盘平仓。':''}`;
   const endIndex=data.startIndex+state.day;
-  visibleStart=Math.max(0,endIndex-69);chartBars=data.stocks.ASSET.bars.slice(visibleStart,endIndex+1);
+  updateChartWindow();
   indicators=technicalIndicators(data.stocks.ASSET.bars.slice(0,endIndex+1));
-  hover=null;pinned=false;holdInspectors.forEach(controller=>controller.cancel());$('visible-range').textContent=`当前显示 ${chartBars.length} 根日线 · 无未来数据`;
+  hover=null;pinned=false;holdInspectors.forEach(controller=>controller.cancel());
   drawMarket();drawEquity();
 }
 function step(finish=false) {
@@ -164,21 +181,33 @@ async function init() {
       startGame();resetArmed=false;$('reset').textContent='↻ 随机新开一局';render();tell('新的匿名场景已抽取，资金已重置。');
     };
     new ResizeObserver(()=>{drawMarket();drawEquity();}).observe($('candles').parentElement);
+    $('zoom-in').onclick=()=>zoomChart(chartBars.length/1.4);
+    $('zoom-out').onclick=()=>zoomChart(chartBars.length*1.4);
+    $('zoom-reset').onclick=()=>{visibleCount=MAX_VISIBLE_BARS;hover=null;pinned=false;holdInspectors.forEach(controller=>controller.cancel());updateChartWindow();drawMarket();};
     const releaseSelection=()=>{holdInspectors.forEach(controller=>controller.cancel());pinned=false;hover=null;drawMarket();};
     $('latest-bar').onclick=releaseSelection;
     for(const id of ['candles','volume-chart','macd-chart']) {
       const canvas=$(id);
       const selectAt=(clientX,lock=false)=>{const rect=canvas.getBoundingClientRect();hover=Math.max(0,Math.min(chartBars.length-1,Math.floor((clientX-rect.left-5)/(rect.width-62)*chartBars.length)));if(lock)pinned=true;drawMarket();};
       const hold=createHoldInspector({select:x=>selectAt(x,true)});holdInspectors.push(hold);
-      canvas.addEventListener('touchstart',event=>{if(event.touches.length!==1){hold.cancel();return;}const touch=event.touches[0];hold.start(touch.clientX,touch.clientY);},{passive:true});
-      canvas.addEventListener('touchmove',event=>{if(event.touches.length!==1){hold.cancel();return;}const touch=event.touches[0];if(hold.move(touch.clientX,touch.clientY)&&event.cancelable)event.preventDefault();},{passive:false});
-      canvas.addEventListener('touchend',event=>{if(hold.end()&&event.cancelable)event.preventDefault();},{passive:false});
-      canvas.addEventListener('touchcancel',()=>hold.cancel());
+      let pinch=null;
+      const distance=touches=>Math.hypot(touches[0].clientX-touches[1].clientX,touches[0].clientY-touches[1].clientY);
+      canvas.addEventListener('touchstart',event=>{
+        if(event.touches.length===2){hold.cancel();pinch={distance:Math.max(1,distance(event.touches)),count:chartBars.length};if(event.cancelable)event.preventDefault();return;}
+        if(event.touches.length!==1){hold.cancel();pinch=null;return;}
+        const touch=event.touches[0];hold.start(touch.clientX,touch.clientY);
+      },{passive:false});
+      canvas.addEventListener('touchmove',event=>{
+        if(pinch&&event.touches.length===2){if(event.cancelable)event.preventDefault();zoomChart(pinch.count*pinch.distance/Math.max(1,distance(event.touches)));return;}
+        if(event.touches.length!==1){hold.cancel();return;}const touch=event.touches[0];if(hold.move(touch.clientX,touch.clientY)&&event.cancelable)event.preventDefault();
+      },{passive:false});
+      canvas.addEventListener('touchend',event=>{const consumed=hold.end()||pinch!==null;pinch=null;if(consumed&&event.cancelable)event.preventDefault();},{passive:false});
+      canvas.addEventListener('touchcancel',()=>{hold.cancel();pinch=null;});
       canvas.oncontextmenu=event=>event.preventDefault();
       canvas.onpointermove=event=>{if(event.pointerType==='touch')return;if(!pinned||event.buttons===1)selectAt(event.clientX,event.buttons===1);};
       canvas.onpointerdown=event=>{if(event.pointerType!=='touch')selectAt(event.clientX,true);};
       canvas.onpointerleave=()=>{if(!pinned){hover=null;drawMarket();}};
-      canvas.onkeydown=event=>{if(event.key==='Escape'){event.preventDefault();releaseSelection();return;}if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();pinned=true;hover=event.key==='Home'?0:event.key==='End'?chartBars.length-1:Math.max(0,Math.min(chartBars.length-1,(hover??chartBars.length-1)+(event.key==='ArrowLeft'?-1:1)));drawMarket();};
+      canvas.onkeydown=event=>{if(['+','=','-','0'].includes(event.key)){event.preventDefault();if(event.key==='0')$('zoom-reset').click();else zoomChart(chartBars.length*(event.key==='-'?1.4:1/1.4));return;}if(event.key==='Escape'){event.preventDefault();releaseSelection();return;}if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();pinned=true;hover=event.key==='Home'?0:event.key==='End'?chartBars.length-1:Math.max(0,Math.min(chartBars.length-1,(hover??chartBars.length-1)+(event.key==='ArrowLeft'?-1:1)));drawMarket();};
       canvas.onblur=()=>{if(!pinned){hover=null;drawMarket();}};
     }
     document.addEventListener('visibilitychange',()=>{if(document.hidden)holdInspectors.forEach(controller=>controller.cancel());});
