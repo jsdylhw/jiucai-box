@@ -30,7 +30,7 @@ function setupCanvas(id) {
   return {ctx,w:rect.width,h:rect.height};
 }
 function chartFrame(id,min,max,formatter=fixed) {
-  const {ctx,w,h}=setupCanvas(id), left=5,right=Math.max(30,w-57),top=id==='candles'?8:4,bottom=h-(id==='candles'?20:6);
+  const {ctx,w,h}=setupCanvas(id), left=5,right=Math.max(30,w-57),top=id==='candles'?32:4,bottom=h-(id==='candles'?26:6);
   const pad=(max-min||Math.max(Math.abs(max)*.02,1))*.10, low=min<0?min-pad:Math.max(0,min-pad), high=max+pad;
   const y=value=>bottom-(value-low)/(high-low)*(bottom-top), step=(right-left)/chartBars.length;
   const x=i=>left+(i+.5)*step;
@@ -51,26 +51,42 @@ function crosshair(frame, close=null) {
   ctx.restore();
 }
 function windowed(key) { return indicators[key].slice(visibleStart,visibleStart+chartBars.length); }
+function startMarker(frame, label=false) {
+  const index=data.startIndex-visibleStart;
+  if(index<0||index>=chartBars.length)return;
+  const {ctx,x,left,right,top,bottom}=frame,xx=x(index);
+  ctx.save();ctx.strokeStyle=colors.gold;ctx.lineWidth=1.5;ctx.setLineDash([5,4]);
+  ctx.beginPath();ctx.moveTo(xx,top);ctx.lineTo(xx,bottom);ctx.stroke();ctx.setLineDash([]);
+  if(label){
+    const text='开局 · 第 0 天';ctx.font='600 12px "Segoe UI", sans-serif';
+    const width=ctx.measureText(text).width+16,badgeX=Math.max(left,Math.min(right-width,xx-width/2));
+    ctx.fillStyle=colors.gold;ctx.fillRect(badgeX,3,width,23);
+    ctx.beginPath();ctx.moveTo(xx-4,26);ctx.lineTo(xx+4,26);ctx.lineTo(xx,31);ctx.fill();
+    ctx.fillStyle='#17202b';ctx.fillText(text,badgeX+8,19);
+  }
+  ctx.restore();
+}
 function drawCandles() {
   const averages=['ma5','ma10','ma20'].flatMap(windowed).filter(v=>v!==null);
   const min=Math.min(...chartBars.map(b=>b.low),...averages), max=Math.max(...chartBars.map(b=>b.high),...averages);
   const f=chartFrame('candles',min,max,v=>v.toFixed(0)), {ctx,x,y,step,h,right}=f;
   chartBars.forEach((b,i)=>{ctx.strokeStyle=ctx.fillStyle=b.close>=b.open?colors.up:colors.down;ctx.beginPath();ctx.moveTo(x(i),y(b.high));ctx.lineTo(x(i),y(b.low));ctx.stroke();ctx.fillRect(x(i)-step*.28,Math.min(y(b.open),y(b.close)),Math.max(1,step*.56),Math.max(1,Math.abs(y(b.open)-y(b.close))));});
-  line(f,windowed('ma5'),colors.gold);line(f,windowed('ma10'),colors.blue);line(f,windowed('ma20'),colors.purple);crosshair(f,hover===null?null:chartBars[hover].close);
-  ctx.fillStyle='#8c9aac';ctx.fillText(relativeDay(visibleStart-data.startIndex),5,h-2);ctx.fillText(relativeDay(state.day),Math.max(70,right-48),h-2);
+  line(f,windowed('ma5'),colors.gold);line(f,windowed('ma10'),colors.blue);line(f,windowed('ma20'),colors.purple);startMarker(f,true);crosshair(f,hover===null?null:chartBars[hover].close);
+  ctx.font='11px "Segoe UI", sans-serif';ctx.fillStyle='#b9c5d5';ctx.fillText(relativeDay(visibleStart-data.startIndex),5,h-5);
+  const currentLabel=`当前 · 第 ${state.day} 天`;ctx.fillStyle='#e4eaf2';ctx.fillText(currentLabel,right-ctx.measureText(currentLabel).width,h-5);
 }
 function drawVolume() {
   const f=chartFrame('volume-chart',0,Math.max(...chartBars.map(b=>b.volume),...['volumeMa5','volumeMa10'].flatMap(windowed).filter(v=>v!=null)),compact);
   const {ctx,x,y,step}=f;
   chartBars.forEach((b,i)=>{ctx.fillStyle=b.close>=b.open?'#6ed5b385':'#f08f9185';ctx.fillRect(x(i)-step*.31,y(b.volume),Math.max(1,step*.62),y(0)-y(b.volume));});
-  line(f,windowed('volumeMa5'),colors.gold);line(f,windowed('volumeMa10'),colors.blue);crosshair(f);
+  line(f,windowed('volumeMa5'),colors.gold);line(f,windowed('volumeMa10'),colors.blue);startMarker(f);crosshair(f);
 }
 function drawMacd() {
   const values=['dif','dea','histogram'].flatMap(windowed).filter(v=>v!=null);
   const f=chartFrame('macd-chart',Math.min(0,...values),Math.max(0,...values));
   const {ctx,x,y,step,left,right}=f;ctx.strokeStyle='#657384';ctx.beginPath();ctx.moveTo(left,y(0));ctx.lineTo(right,y(0));ctx.stroke();
   windowed('histogram').forEach((v,i)=>{if(v==null)return;ctx.fillStyle=v>=0?'#6ed5b390':'#f08f9190';ctx.fillRect(x(i)-step*.28,Math.min(y(v),y(0)),Math.max(1,step*.56),Math.max(1,Math.abs(y(v)-y(0))));});
-  line(f,windowed('dif'),colors.gold);line(f,windowed('dea'),colors.blue);crosshair(f);
+  line(f,windowed('dif'),colors.gold);line(f,windowed('dea'),colors.blue);startMarker(f);crosshair(f);
 }
 function indicatorReadouts() {
   const index=visibleStart+(hover??(chartBars.length-1)), current=data.stocks.ASSET.bars[index];

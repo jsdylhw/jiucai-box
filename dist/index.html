@@ -6,14 +6,14 @@
 <main>
 <section class="intro"><div><button id="reset" class="new-game">↻ 随机新开一局</button></div><div class="session"><span id="date">匿名历史场景</span><strong><span id="day">00</span><small> / 60</small></strong><div class="progress"><i id="progress"></i></div><small class="session-note">交易日进度</small></div></section>
 <div id="notice" role="status" aria-live="polite">正在准备随机历史场景。</div>
-<section class="stats" aria-label="账户概览"><article><label>账户净资产</label><strong id="equity">—</strong><small>现金 + 多头市值 − 空头负债</small></article><article><label>累计收益</label><strong id="return">—</strong><small id="initial">初始资金 $100,000</small></article><article><label>最大回撤</label><strong id="drawdown">—</strong><small>按每日收盘净值计算</small></article><article><label>总敞口 / 净资产</label><strong id="exposure">—</strong><small id="costs">手续费与借券成本</small></article></section>
+<section class="account-strip" aria-label="账户概览"><div class="stats"><article><label>净资产</label><strong id="equity">—</strong></article><article><label>收益</label><strong id="return">—</strong></article><article><label>最大回撤</label><strong id="drawdown">—</strong></article></div><details class="account-details"><summary>账户明细 <span>敞口 <b id="exposure">—</b></span></summary><div><span id="initial">初始资金 $100,000</span><span id="costs">手续费与借券成本</span><span>净资产 = 现金 + 多头市值 − 空头负债</span></div></details></section>
 <div class="workspace">
 <section class="panel market">
   <div class="quote"><div class="quote-main"><strong id="price">—</strong><span id="price-change"></span></div><div class="quote-selection"><span id="selected-day">起点</span><button id="latest-bar" class="quiet" disabled aria-label="退出选中，返回最新日线">最新 ↗</button></div></div>
   <div class="ohlc-grid" aria-label="选中日线的开高低收"><div><span>开盘</span><strong id="open-value">—</strong></div><div><span>最高</span><strong id="high-value">—</strong></div><div><span>最低</span><strong id="low-value">—</strong></div><div><span>收盘</span><strong id="close-value">—</strong></div></div>
   <div class="indicator-readout" id="ma-values"></div>
   <div class="chart-wrap"><canvas id="candles" tabindex="0" aria-label="匿名股票日线与均线，长按后滑动或用左右方向键查看日线，Escape返回最新"></canvas></div>
-  <div class="chart-footer"><span><i class="legend positive"></i> 上涨 <i class="legend negative"></i> 下跌</span><span id="visible-range"></span></div>
+  <div class="chart-footer"><span class="start-legend">金色虚线：开局第 0 天</span><span id="visible-range"></span></div>
   <div class="indicator-heading"><h3>成交量 <small>VOL · 股</small></h3><span id="volume-values"></span></div>
   <canvas id="volume-chart" tabindex="0" aria-label="每日成交量柱状图及5日、10日均量线"></canvas>
   <div class="indicator-heading"><h3>MACD <small>12 / 26 / 9</small></h3><span class="indicator-readout" id="macd-values"></span></div>
