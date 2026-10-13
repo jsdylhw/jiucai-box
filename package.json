@@ -1,0 +1,15 @@
+{
+  "name": "jiucai-box",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Anonymous 60-session stock replay game, entirely in the browser",
+  "type": "module",
+  "engines": {"node": ">=22"},
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "dev": "python -m http.server 8765 --bind 127.0.0.1 --directory dist",
+    "bundle": "python scripts/bundle.py",
+    "data": "python scripts/fetch_data.py",
+    "experiment": "node scripts/experiment.mjs"
+  }
+}

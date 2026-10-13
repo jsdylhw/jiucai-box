@@ -1,0 +1,13 @@
+# Earlier local experiments are kept outside the published project.
+experiments/
+node_modules/
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+jiucai-box.html
+experiment-results.json
+dist/data/*.tmp
+.DS_Store
+Thumbs.db
