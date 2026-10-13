@@ -108,3 +108,17 @@ canvas:focus-visible{outline:1px solid var(--gold);outline-offset:2px}
 .revealed-stock{font-size:13px;font-weight:600;color:var(--gold);padding:4px 0 10px;overflow-wrap:anywhere}
 .result h2{overflow-wrap:anywhere}
 @media(max-width:360px){.market .account-strip .stats article{padding:0 6px}.market .account-strip .stats strong{font-size:11px}.position-controls{grid-template-columns:minmax(0,1fr) 50px 50px;gap:5px}}
+
+/* One-line OHLC and shorter secondary charts. */
+.market .ohlc-grid{padding:4px 0;margin:1px 0 5px;line-height:18px}
+.market .ohlc-grid>div{flex-direction:row;align-items:center;gap:4px;padding:0 6px;min-width:0;white-space:nowrap}
+.market .ohlc-grid>div:first-child{padding-left:0}
+.market .ohlc-grid span{font-size:10px}
+.market .ohlc-grid strong{font-size:12px}
+.market #volume-chart{height:48px}
+.market #macd-chart{height:56px}
+.market .indicator-heading{padding-top:1px;margin-top:1px;gap:3px}
+.market .indicator-heading h3{margin:2px 0;line-height:14px}
+.market .chart-footer{margin:3px 0 1px}
+@media(max-width:760px){.market .ohlc-grid>div{gap:3px;padding:0 4px}.market .ohlc-grid>div:first-child{padding-left:0}.market .ohlc-grid span{font-size:9px}.market .ohlc-grid strong{font-size:11px}.market #volume-chart{height:42px}.market #macd-chart{height:50px}.market .indicator-heading>span{gap:4px}.market .chart-hint{margin-top:2px}}
+@media(max-width:360px){.market .ohlc-grid>div{gap:2px;padding:0 3px}.market .ohlc-grid strong{font-size:10px}}

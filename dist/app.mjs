@@ -42,7 +42,8 @@ function chartFrame(id,min,max,formatter=fixed) {
   const y=value=>bottom-(value-low)/(high-low)*(bottom-top), step=(right-left)/chartBars.length;
   const x=i=>left+(i+.5)*step;
   ctx.strokeStyle='#2a3340';ctx.fillStyle='#8c9aac';
-  for(let i=0;i<4;i++) { const value=low+(high-low)*i/3,yy=y(value);ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(right,yy);ctx.stroke();ctx.fillText(formatter(value),right+7,yy+3); }
+  const ticks=id==='candles'?4:3;
+  for(let i=0;i<ticks;i++) { const value=low+(high-low)*i/(ticks-1),yy=y(value);ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(right,yy);ctx.stroke();ctx.fillText(formatter(value),right+7,yy+3); }
   return {ctx,w,h,left,right,top,bottom,y,x,step};
 }
 function line(frame,values,color) {
